@@ -85,7 +85,23 @@ class GameEngine:
 
     def render(self, screen):
         screen.fill((30, 32, 36))
+        # Animate pullers based on rope displacement.
+        center_x = self.rope.screen_width / 2
+        displacement = self.rope.marker_x - center_x
 
+        lean_strength = 15.0
+
+        if displacement < 0:
+            # Player is pulling left.
+            self.player.lean = -lean_strength
+            self.computer.lean = -lean_strength * 0.4
+        elif displacement > 0:
+            # Computer is pulling right.
+            self.player.lean = lean_strength * 0.4
+            self.computer.lean = lean_strength
+        else:
+            self.player.lean = 0.0
+            self.computer.lean = 0.0
         mud_rect = pygame.Rect(self.width // 2 - 120, self.height // 2 - 80, 240, 160)
         pygame.draw.rect(screen, (45, 38, 30), mud_rect, border_radius=12)
 
