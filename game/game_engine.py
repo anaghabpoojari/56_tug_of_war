@@ -40,16 +40,41 @@ class GameEngine:
             return
 
         now = pygame.time.get_ticks()
-        if now - self.last_computer_pull >= self.computer_pull_cooldown:
-            computer_variance = random.uniform(0.7, 1.2)
-            self.rope.pull_right(computer_variance)
+
+        # Distance from the player's goal line to the computer's goal line
+        total_distance = self.rope.right_win_x - self.rope.left_win_x
+
+        # How far the marker has moved toward the player's goal
+        player_progress = self.rope.right_win_x - self.rope.marker_x
+
+        # Convert progress into a 0.0 - 1.0 value
+        progress_ratio = player_progress / total_distance
+        progress_ratio = max(0.0, min(1.0, progress_ratio))
+
+        # Dynamic computer difficulty
+        if progress_ratio > 0.65:
+            # Panic surge: player is getting close to winning
+            computer_cooldown = 70
+            computer_strength = random.uniform(1.3, 1.8)
+
+        elif progress_ratio > 0.40:
+            # Moderate response
+            computer_cooldown = 120
+            computer_strength = random.uniform(1.0, 1.5)
+
+        else:
+            # Normal computer behavior
+            computer_cooldown = 180
+            computer_strength = random.uniform(0.7, 1.2)
+
+        if now - self.last_computer_pull >= computer_cooldown:
+            self.rope.pull_right(computer_strength)
             self.last_computer_pull = now
 
         result = self.rope.check_winner()
         if result:
             self.winner = result
             self.game_state = "GAME_OVER"
-
     def reset(self):
         self.rope.reset()
         self.last_key = None
