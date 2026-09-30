@@ -17,6 +17,10 @@ class GameEngine:
         self.winner = None
         self.game_state = "PLAYING"
 
+        self.match_duration = 30
+        self.match_start_time = pygame.time.get_ticks()
+        self.sudden_death = False
+
         self.computer_pull_cooldown = 180
         self.last_computer_pull = pygame.time.get_ticks()
 
@@ -40,6 +44,13 @@ class GameEngine:
             return
 
         now = pygame.time.get_ticks()
+
+        elapsed_seconds = (now - self.match_start_time) / 1000
+        remaining_seconds = max(0, self.match_duration - int(elapsed_seconds))
+
+        # Enter sudden death when the timer expires
+        if remaining_seconds == 0 and not self.sudden_death:
+            self.sudden_death = True
 
         # Distance from the player's goal line to the computer's goal line
         total_distance = self.rope.right_win_x - self.rope.left_win_x
@@ -66,6 +77,10 @@ class GameEngine:
             # Normal computer behavior
             computer_cooldown = 180
             computer_strength = random.uniform(0.7, 1.2)
+        # Sudden death: both sides pull harder
+        if self.sudden_death:
+            computer_cooldown = 50
+            computer_strength = random.uniform(1.5, 2.0)
 
         if now - self.last_computer_pull >= computer_cooldown:
             self.rope.pull_right(computer_strength)
@@ -82,6 +97,8 @@ class GameEngine:
         self.winner = None
         self.game_state = "PLAYING"
         self.last_computer_pull = pygame.time.get_ticks()
+        self.match_start_time = pygame.time.get_ticks()
+        self.sudden_death = False
 
     def render(self, screen):
         screen.fill((30, 32, 36))
@@ -114,6 +131,22 @@ class GameEngine:
         )
         screen.blit(inst_surf, (self.width // 2 - inst_surf.get_width() // 2, 40))
 
+        now = pygame.time.get_ticks()
+        elapsed_seconds = (now - self.match_start_time) / 1000
+        remaining_seconds = max(0, self.match_duration - int(elapsed_seconds))
+
+        if self.sudden_death:
+            timer_text = "SUDDEN DEATH!"
+            timer_color = (255, 80, 80)
+        else:
+            timer_text = f"TIME: {remaining_seconds}s"
+            timer_color = (240, 240, 240)
+
+        timer_surf = self.font_big.render(timer_text, True, timer_color)
+        screen.blit(
+            timer_surf,
+            (self.width // 2 - timer_surf.get_width() // 2, 75)
+        )
         if self.game_state == "GAME_OVER":
             overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 180))
